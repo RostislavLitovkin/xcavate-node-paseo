@@ -8729,6 +8729,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-assets",
  "pallet-balances",
  "pallet-xcavate-whitelist",
  "parity-scale-codec",
@@ -8808,6 +8809,22 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
+]
+
+[[package]]
+name = "pallet-faucet"
+version = "4.0.0-dev"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -9517,6 +9534,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-assets",
  "pallet-balances",
  "pallet-nfts",
  "pallet-xcavate-whitelist",
@@ -10131,6 +10149,8 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-assets",
+ "pallet-balances",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -19321,6 +19341,7 @@ dependencies = [
  "pallet-collator-selection",
  "pallet-did-lookup",
  "pallet-education-regions",
+ "pallet-faucet",
  "pallet-hyperbridge",
  "pallet-ismp",
  "pallet-ismp-runtime-api",

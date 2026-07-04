@@ -27,7 +27,7 @@ use sp_runtime::{
 
 use pallet_nfts::PalletFeatures;
 
-use pallet_assets::Instance1;
+use pallet_assets::{Instance1, Instance2};
 
 use frame_system::EnsureRoot;
 
@@ -79,6 +79,8 @@ mod test_runtime {
     pub type Regions = pallet_regions;
     #[runtime::pallet_index(7)]
     pub type RealWorldAsset = crate;
+    #[runtime::pallet_index(8)]
+    pub type ForeignAssets = pallet_assets::Pallet<Runtime, Instance2>;
 }
 
 parameter_types! {
@@ -153,6 +155,34 @@ impl pallet_assets::Config<Instance1> for Test {
 }
 
 parameter_types! {
+    pub RootAccountId: AccountId = AccountId::from([0xffu8; 32]);
+}
+
+impl pallet_assets::Config<Instance2> for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = u128;
+    type AssetId = u32;
+    type AssetIdParameter = parity_scale_codec::Compact<u32>;
+    type Currency = Balances;
+    type CreateOrigin = frame_support::traits::AsEnsureOriginWithArg<
+        frame_system::EnsureRootWithSuccess<AccountId, RootAccountId>,
+    >;
+    type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+    type AssetDeposit = ConstU128<0>;
+    type AssetAccountDeposit = ConstU128<0>;
+    type MetadataDepositBase = ConstU128<0>;
+    type MetadataDepositPerByte = ConstU128<0>;
+    type ApprovalDeposit = ConstU128<0>;
+    type StringLimit = frame_support::traits::ConstU32<50>;
+    type Freezer = ();
+    type Holder = ();
+    type Extra = ();
+    type CallbackHandle = ();
+    type WeightInfo = ();
+    type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+}
+
+parameter_types! {
     pub Features: PalletFeatures = PalletFeatures::all_enabled();
     pub const ApprovalsLimit: u32 = 20;
     pub const ItemAttributesApprovalsLimit: u32 = 20;
@@ -213,10 +243,22 @@ impl pallet_nft_fractionalization::Config for Test {
     type RuntimeHoldReason = RuntimeHoldReason;
 }
 
+parameter_types! {
+    pub const AirdropNativeAmount: Balance = 0;
+    pub const AirdropAssetId: u32 = 10;
+    pub const AirdropAssetAmount: Balance = 0;
+}
+
 impl pallet_xcavate_whitelist::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_xcavate_whitelist::weights::SubstrateWeight<Test>;
     type WhitelistOrigin = frame_system::EnsureRoot<Self::AccountId>;
+    type Balance = u128;
+    type NativeCurrency = Balances;
+    type ForeignCurrency = ForeignAssets;
+    type AirdropNativeAmount = AirdropNativeAmount;
+    type AirdropAssetId = AirdropAssetId;
+    type AirdropAssetAmount = AirdropAssetAmount;
 }
 
 use pallet_xcavate_whitelist::{self as whitelist, RolePermission};
@@ -303,7 +345,7 @@ impl pallet_regions::Config for Test {
 }
 
 parameter_types! {
-    pub const MaxPropertyTokens: u32 = 1000;
+    pub const MaxPropertyShares: u32 = 1000;
 }
 
 impl crate::Config for Test {
@@ -319,7 +361,7 @@ impl crate::Config for Test {
     type FractionalizeItemId = <Self as pallet_nfts::Config>::ItemId;
     type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
     type PropertyAccountFundingAmount = ConstU128<100>;
-    type MaxPropertyToken = MaxPropertyTokens;
+    type MaxPropertyShares = MaxPropertyShares;
     type StringLimit = ConstU32<50>;
     type RegionProvider = Regions;
     type PostcodeLimit = Postcode;

@@ -686,11 +686,36 @@ impl pallet_assets_freezer::Config<pallet_assets::Instance1> for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+    pub const WhitelistAirdropNativeAmount: Balance = 10 * XCAV; // 10 XCAV
+    pub const WhitelistAirdropAssetId: u32 = 10; // tGBP
+    pub const WhitelistAirdropAssetAmount: Balance = 10_000_000_000_000_000_000_000; // 10,000 tGBP (18 decimals)
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct WhitelistBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_xcavate_whitelist::BenchmarkHelper<Runtime> for WhitelistBenchmarkHelper {
+    fn setup_airdrop_asset() {
+        use frame_support::traits::fungibles::Create;
+        let admin = AccountId::from([0xffu8; 32]);
+        let _ = <Assets as Create<AccountId>>::create(WhitelistAirdropAssetId::get(), admin, true, 1);
+    }
+}
+
 /// Configure the pallet-xcavate-whitelist in pallets/xcavate-whitelist.
 impl pallet_xcavate_whitelist::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = weights::pallet_xcavate_whitelist::WeightInfo<Runtime>;
     type WhitelistOrigin = EnsureRoot<Self::AccountId>;
+    type Balance = Balance;
+    type NativeCurrency = Balances;
+    type ForeignCurrency = Assets;
+    type AirdropNativeAmount = WhitelistAirdropNativeAmount;
+    type AirdropAssetId = WhitelistAirdropAssetId;
+    type AirdropAssetAmount = WhitelistAirdropAssetAmount;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = WhitelistBenchmarkHelper;
 }
 
 use pallet_xcavate_whitelist::{self as whitelist, RolePermission};
@@ -855,7 +880,7 @@ parameter_types! {
     pub const MaxCleanupPerCallAmount: u32 = 50;
     pub const MinimumImpactScore: Permill = Permill::from_percent(50);
     pub const SuccessfulDeliveriesForStrikeReduction: u32 = 5;
-    pub const AcceptedPaymentAssets: [u32; 4] = [1, 10, 1337, 1984];
+    pub const AcceptedPaymentAssets: [u32; 3] = [10, 1337, 1984];
 }
 
 /// Configure the pallet-real-x-education in pallets/real-x-education.
@@ -916,7 +941,7 @@ parameter_types! {
     pub const MarketplacePalletId: PalletId = PalletId(*b"py/nftxc");
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
     pub const PropertyFundingAmount: Balance = 10 * XCAV;
-    pub const MaxPropertyTokens: u32 = 250;
+    pub const MaxPropertyShares: u32 = 250;
 }
 
 pub struct BucketNamespaceManager;
@@ -969,7 +994,7 @@ impl pallet_real_world_asset::Config for Runtime {
     type FractionalizeItemId = <Self as pallet_nfts::Config<Instance1>>::ItemId;
     type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
     type PropertyAccountFundingAmount = PropertyFundingAmount;
-    type MaxPropertyToken = MaxPropertyTokens;
+    type MaxPropertyShares = MaxPropertyShares;
     type StringLimit = StringLimit;
     type RegionProvider = Regions;
     type PostcodeLimit = Postcode;
@@ -977,7 +1002,7 @@ impl pallet_real_world_asset::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MinPropertyTokens: u32 = 100;
+    pub const MinPropertyShares: u32 = 100;
     pub const ListingDepositAmount: Balance = 10 * MICROXCAV;
     pub const MarketplaceFeePercent: Perbill = Perbill::from_percent(1);
     pub const MaximumAcceptedAssets: u32 = 2;
@@ -987,7 +1012,7 @@ parameter_types! {
     pub const ClaimWindowTime: BlockNumber = 100;
     pub const MaximumRelistAttempts: u8 = 1;
     pub const MaxOwnershipPercentage: Perbill = Perbill::from_percent(50);
-    pub const AcceptedMarketplacePaymentAssets: [u32; 2] = [1, 10];
+    pub const AcceptedMarketplacePaymentAssets: [u32; 2] = [10, 1];
 }
 
 /// Configure the pallet-marketplace in pallets/marketplace.
@@ -1004,15 +1029,15 @@ impl pallet_marketplace::Config for Runtime {
     type NftCollectionId = <Self as pallet_nfts::Config<Instance1>>::CollectionId;
     type NftId = <Self as pallet_nfts::Config<Instance1>>::ItemId;
     type PalletId = MarketplacePalletId;
-    type MinPropertyToken = MinPropertyTokens;
-    type MaxPropertyToken = MaxPropertyTokens;
+    type MinPropertyShares = MinPropertyShares;
+    type MaxPropertyShares = MaxPropertyShares;
     type TreasuryId = TreasuryPalletId;
     type AssetId = <Self as pallet_assets::Config<Instance1>>::AssetId;
     type ListingDeposit = ListingDepositAmount;
     type MarketplaceFeePercentage = MarketplaceFeePercent;
     type AcceptedAssets = AcceptedMarketplacePaymentAssets;
     type MaxAcceptedAssets = MaximumAcceptedAssets;
-    type PropertyToken = RealWorldAsset;
+    type PropertyShares = RealWorldAsset;
     type LawyerVotingTime = LawyerVotingDuration;
     type LegalProcessTime = LegalProcessDuration;
     type Whitelist = XcavateWhitelist;
@@ -1054,7 +1079,7 @@ impl pallet_property_management::Config for Runtime {
     type MaxProperties = MaxProperty;
     type MaxLocations = MaxLocation;
     type AcceptedAssets = AcceptedMarketplacePaymentAssets;
-    type PropertyToken = RealWorldAsset;
+    type PropertyShares = RealWorldAsset;
     type LettingAgentVotingTime = LettingAgentVotingDuration;
     type PermissionOrigin = EnsureHasRole<Self>;
     type MinVotingQuorum = MinimumVotingQuorum;
@@ -1094,7 +1119,7 @@ impl pallet_property_governance::Config for Runtime {
     type HighProposal = HighProposal;
     type MarketplacePalletId = MarketplacePalletId;
     type Slash = ();
-    type PropertyToken = RealWorldAsset;
+    type PropertyShares = RealWorldAsset;
     type PermissionOrigin = EnsureHasRole<Self>;
     type MinVotingQuorum = MinimumVotingQuorum;
     type BlockNumberProvider = System;
@@ -1365,6 +1390,26 @@ impl pallet_bucket::Config for Runtime {
     type MaxProperties = MaxProperties;
     type MaxPropertyKeyLen = MaxPropertyKeyLen;
     type MaxPropertyValueLen = MaxPropertyValueLen;
+}
+
+parameter_types! {
+    pub const FaucetDripAssetId: u32 = 10;
+    pub const FaucetDripAmount: Balance = 1_000_000_000_000_000_000_000; // 1000 tGBP (18 decimals)
+    pub const FaucetMinXcavBalance: Balance = XCAV;
+    pub const FaucetCooldownPeriod: BlockNumber = 7 * DAYS;
+}
+
+impl pallet_faucet::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = weights::pallet_faucet::WeightInfo<Runtime>;
+    type Balance = Balance;
+    type NativeCurrency = Balances;
+    type ForeignCurrency = Assets;
+    type DripAssetId = FaucetDripAssetId;
+    type DripAmount = FaucetDripAmount;
+    type MinXcavBalance = FaucetMinXcavBalance;
+    type CooldownPeriod = FaucetCooldownPeriod;
+    type BlockNumberProvider = System;
 }
 
 use crate::{

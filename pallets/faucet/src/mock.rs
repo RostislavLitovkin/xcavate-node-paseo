@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate as pallet_whitelist;
+use crate as pallet_faucet;
 use frame_support::{derive_impl, parameter_types};
 use sp_core::ConstU128;
 use sp_runtime::{
@@ -24,21 +24,33 @@ use sp_runtime::{
 
 use pallet_assets::Instance2;
 
-type Block = frame_system::mocking::MockBlock<Test>;
+pub type Block = frame_system::mocking::MockBlock<Test>;
 
 pub type Balance = u128;
+
+pub type BlockNumber = u64;
+
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 pub type Signature = MultiSignature;
+
+pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
+pub const HOURS: BlockNumber = MINUTES * 60;
+pub const DAYS: BlockNumber = HOURS * 24;
 
 frame_support::construct_runtime!(
     pub enum Test
     {
-        System: frame_system,
-        Balances: pallet_balances,
+        System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         ForeignAssets: pallet_assets::<Instance2>,
-        Whitelist: pallet_whitelist,
+        Faucet: pallet_faucet,
     }
 );
+
+parameter_types! {
+    pub const BlockHashCount: BlockNumber = 2400;
+}
 
 #[derive_impl(frame_system::config_preludes::ParaChainDefaultConfig as frame_system::DefaultConfig)]
 impl frame_system::Config for Test {
@@ -51,7 +63,7 @@ impl frame_system::Config for Test {
     type Lookup = AccountIdLookup<AccountId, ()>;
     type RuntimeEvent = RuntimeEvent;
     type RuntimeOrigin = RuntimeOrigin;
-    type BlockHashCount = frame_support::traits::ConstU64<250>;
+    type BlockHashCount = BlockHashCount;
     type Version = ();
     type PalletInfo = PalletInfo;
     type AccountData = pallet_balances::AccountData<u128>;
@@ -114,38 +126,38 @@ impl pallet_assets::Config<Instance2> for Test {
 }
 
 parameter_types! {
-    pub const AirdropNativeAmount: Balance = 10_000_000_000_000; // 10 XCAV (12 decimals)
-    pub const AirdropAssetId: u32 = 10;
-    pub const AirdropAssetAmount: Balance = 10_000_000_000_000_000_000_000; // 10,000 tGBP (18 decimals)
+    pub const DripAssetId: u32 = 10;
+    pub const DripAmount: Balance = 1_000_000_000_000_000_000_000; // 1000 tGBP (18 decimals)
+    pub const MinXcavBalance: Balance = 1_000_000_000_000; // 1 XCAV (12 decimals)
+    pub const CooldownPeriod: BlockNumber = DAYS;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-pub struct WhitelistBenchmarkHelper;
-#[cfg(feature = "runtime-benchmarks")]
-impl pallet_whitelist::BenchmarkHelper<Test> for WhitelistBenchmarkHelper {
-    fn setup_airdrop_asset() {
-        use frame_support::traits::fungibles::Create;
-        let admin: AccountId = [0; 32].into();
-        let _ = <ForeignAssets as Create<AccountId>>::create(AirdropAssetId::get(), admin, true, 1);
-    }
-}
-
-impl pallet_whitelist::Config for Test {
+impl pallet_faucet::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = pallet_whitelist::weights::SubstrateWeight<Test>;
-    type WhitelistOrigin = frame_system::EnsureRoot<Self::AccountId>;
+    type WeightInfo = pallet_faucet::weights::SubstrateWeight<Test>;
     type Balance = u128;
     type NativeCurrency = Balances;
     type ForeignCurrency = ForeignAssets;
-    type AirdropNativeAmount = AirdropNativeAmount;
-    type AirdropAssetId = AirdropAssetId;
-    type AirdropAssetAmount = AirdropAssetAmount;
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = WhitelistBenchmarkHelper;
+    type DripAssetId = DripAssetId;
+    type DripAmount = DripAmount;
+    type MinXcavBalance = MinXcavBalance;
+    type CooldownPeriod = CooldownPeriod;
+    type BlockNumberProvider = System;
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
     let mut test = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
+
+    pallet_balances::GenesisConfig::<Test> {
+        balances: vec![
+            ([1; 32].into(), 10_000_000_000_000_000), // 10_000 XCAV
+            ([2; 32].into(), 500_000_000_000),        // 0.5 XCAV (below minimum)
+            ([3; 32].into(), 1_000_000_000_000),      // exactly 1 XCAV
+        ],
+        dev_accounts: None,
+    }
+    .assimilate_storage(&mut test)
+    .unwrap();
 
     pallet_assets::GenesisConfig::<Test, Instance2> {
         assets: vec![(10, [0; 32].into(), true, 1)],
@@ -156,15 +168,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     .assimilate_storage(&mut test)
     .unwrap();
 
-    let mut ext = sp_io::TestExternalities::new(test);
-    ext.execute_with(|| {
-        System::set_block_number(1);
-    });
-    ext
-}
-
-pub fn new_test_ext_no_asset() -> sp_io::TestExternalities {
-    let test = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
     let mut ext = sp_io::TestExternalities::new(test);
     ext.execute_with(|| {
         System::set_block_number(1);

@@ -39,6 +39,12 @@ impl<T: crate::Config + pallet_xcavate_whitelist::Config + pallet_education_regi
 {
 }
 
+fn sponsor_mint_amount<T: Config>() -> <T as pallet::Config>::Balance {
+    let payment_asset = T::AcceptedAssets::get()[0];
+    let decimals = T::AssetMetadata::get_decimals(payment_asset).unwrap_or(18);
+    T::ModulePrice::get() * 200u32.into() * 10u128.pow(decimals as u32).into()
+}
+
 fn create_a_new_region<T: Config>(admin: T::AccountId) -> u16 {
     let regional_operator = account("regional_operator", 0, 0);
     let region = RegionIdentifier::Japan;
@@ -167,10 +173,10 @@ mod benchmarks {
         let deposit = T::BookingDeposit::get() * 100u32.into();
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&creator, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         let metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -188,10 +194,10 @@ mod benchmarks {
         ));
 
         #[extrinsic_call]
-        sponsor_module(RawOrigin::Signed(sponsor.clone()), 0, 10, 1984);
+        sponsor_module(RawOrigin::Signed(sponsor.clone()), 0, 10, T::AcceptedAssets::get()[0]);
 
         assert_eq!(SponsoredModules::<T>::get(0, 0).unwrap().amount, 10);
-        assert_eq!(SponsoredModules::<T>::get(0, 0).unwrap().payment_asset, 1984);
+        assert_eq!(SponsoredModules::<T>::get(0, 0).unwrap().payment_asset, T::AcceptedAssets::get()[0]);
     }
 
     #[benchmark]
@@ -222,10 +228,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&creator, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         let metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -246,7 +252,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -299,10 +305,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -327,7 +333,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -390,10 +396,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -418,7 +424,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -512,10 +518,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&high_school_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -540,7 +546,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -654,10 +660,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&high_school_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -682,7 +688,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -838,10 +844,10 @@ mod benchmarks {
         let deposit = T::BookingDeposit::get() * 100u32.into();
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&creator, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         let metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -862,7 +868,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         assert!(SponsoredModules::<T>::get(0, 0).is_some());
@@ -914,10 +920,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -942,7 +948,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =
@@ -1010,10 +1016,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -1038,7 +1044,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         for i in 0..<T as pallet::Config>::MaxCleanupPerCall::get() {
@@ -1115,10 +1121,10 @@ mod benchmarks {
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&sponsor, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&school, deposit));
         assert_ok!(<T as pallet::Config>::NativeCurrency::mint_into(&university_student, deposit));
-        assert_ok!(T::ForeignCurrency::mint_into(
-            T::AcceptedAssets::get()[1],
+        assert_ok!(<T as pallet::Config>::ForeignCurrency::mint_into(
+            T::AcceptedAssets::get()[0],
             &sponsor,
-            T::ModulePrice::get() * 20u32.into()
+            sponsor_mint_amount::<T>()
         ));
 
         assert_ok!(RealXEducation::<T>::register_module_deliverer(
@@ -1143,7 +1149,7 @@ mod benchmarks {
             RawOrigin::Signed(sponsor.clone()).into(),
             0,
             10,
-            1984
+            T::AcceptedAssets::get()[0]
         ));
 
         let booking_metadata: BoundedVec<u8, <T as pallet::Config>::StringLimit> =

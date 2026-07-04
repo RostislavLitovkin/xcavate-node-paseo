@@ -23,16 +23,17 @@ pallets=(
     #pallet_education_regions
     #pallet_real_x_education
     #pallet_regions
-    #pallet_marketplace
-    #pallet_property_management
-    #pallet_property_governance
+    pallet_marketplace
+    pallet_property_management
+    pallet_property_governance
     #pallet_bucket
     #attestation
     #ctype
     #delegation
     #did
     #pallet-public_credentials
-    pallet_did_lookup
+    #pallet_did_lookup
+    #pallet_faucet
 )
 
 # Generate weights
